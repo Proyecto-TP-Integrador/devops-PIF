@@ -1,0 +1,20 @@
+.venv/
+semgrep-results.json
+semgrep.sarif
+.semgrep_logs/
+.semgrep-tmp/
+**/.terraform/
+*.tfstate
+*.tfstate.*
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# TP16 - artefactos locales de Trivy
+manifests-rendered-*.yaml
+trivy-*.txt
+
+# TP18: reportes locales (pueden contener datos sensibles)
+reports-json/
+.semgrep-tmp/
+manifests-rendered-prod.yaml
