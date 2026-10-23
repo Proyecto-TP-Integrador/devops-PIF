@@ -204,7 +204,7 @@ jobs:
   defectdojo-import:
     name: "Fase 3: Centralización en DefectDojo (Vulnerability Management)"
     # v2: runner self-hosted en la VM de DefectDojo (ubuntu-latest no alcanza localhost:8080)
-    runs-on: [self-hosted, tp18]
+    runs-on: [self-hosted, pif]
     needs: [security-audits]
     # v2: nunca en pull_request (repo público + runner self-hosted); needs exige Fase 2 exitosa
     if: github.event_name != 'pull_request'
