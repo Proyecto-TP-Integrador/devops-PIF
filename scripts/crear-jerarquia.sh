@@ -145,18 +145,17 @@ PID=$(gh project view "$PROJ" --owner "$OWNER" --format json --jq .id)
 FIELDS=$(gh project field-list "$PROJ" --owner "$OWNER" --format json)
 campo_id()  { echo "$FIELDS" | jq -r --arg n "$1" '.fields[] | select(.name==$n) | .id'; }
 opcion_id() { echo "$FIELDS" | jq -r --arg n "$1" --arg o "$2" '.fields[] | select(.name==$n) | .options[] | select(.name==$o) | .id'; }
-
 item_id() {
-  local i id
-  for i in 1 2 3 4 5 6; do
-    id=$(gh project item-list "$PROJ" --owner "$OWNER" --limit 100 --format json \
-      | jq -r --argjson n "$1" '.items[] | select(.content.number==$n) | .id' | head -1)
-    if [ -n "$id" ]; then echo "$id"; return 0; fi
-    sleep 5
-  done
-  echo "ERROR: el Issue #$1 no aparece en el proyecto" >&2
-  return 1
+  gh api graphql -F n="$1" -f query='
+  query($n: Int!) {
+    repository(owner: "laudainotta", name: "devops-PIF") {
+      issue(number: $n) {
+        projectItems(first: 5) { nodes { id project { number } } }
+      }
+    }
+  }' | jq -r --argjson p "$PROJ" '.data.repository.issue.projectItems.nodes[] | select(.project.number==$p) | .id' | head -1
 }
+
 
 asignar() {
   local it
