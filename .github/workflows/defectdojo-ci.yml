@@ -1,4 +1,4 @@
-name: CI/CD Pipeline - Notes App DevSecOps con DefectDojo (4 Fases) v2
+name: CI/CD Pipeline - Notes App DevSecOps (4 Fases)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# v2: mínimo privilegio para el GITHUB_TOKEN (heredado del TP16/TP17)
+# Mínimo privilegio para el GITHUB_TOKEN
 permissions:
   contents: read
 
@@ -15,8 +15,10 @@ env:
   DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/devops-portfolio
   HELM_RELEASE_NAME: mi-app
   K8S_NAMESPACE: devops-portfolio
-  # v2: rutas reales del repo (la guía asumía ./backend y ./devops-portfolio en la raíz)
-  APP_DIR: guia-10
+  # Rutas de la estructura del PIF
+  BACKEND_DIR: app/backend
+  CHART_DIR: helm/notes-app
+  VALUES_PROD: helm/values-prod.yaml
   GITLEAKS_VERSION: 8.18.2
 
 jobs:
@@ -35,7 +37,7 @@ jobs:
 
       - name: Compilar imagen Docker
         run: |
-          docker build -t ${{ env.DOCKER_IMAGE }}:${{ github.sha }} ./${{ env.APP_DIR }}/backend
+          docker build -t ${{ env.DOCKER_IMAGE }}:${{ github.sha }} ./${{ env.BACKEND_DIR }}
 
       - name: Exportar imagen a tarball efímero
         run: |
@@ -83,14 +85,14 @@ jobs:
         with:
           version: 'v3.13.0'
 
-      - name: Renderizar Helm Chart (TP10B - Pattern)
+      - name: Renderizar Helm Chart (Render First)
         run: |
-          helm template ${{ env.HELM_RELEASE_NAME }} ./${{ env.APP_DIR }}/devops-portfolio \
-            -f ${{ env.APP_DIR }}/values-prod.yaml > manifests-rendered-prod.yaml
+          helm template ${{ env.HELM_RELEASE_NAME }} ./${{ env.CHART_DIR }} \
+            -f ${{ env.VALUES_PROD }} > manifests-rendered-prod.yaml
           test -s manifests-rendered-prod.yaml
 
       # -------------------------------------------------------------
-      # 2A. OWASP ZAP DAST (TP13C) - v2: agregado, la guía no lo ejecutaba
+      # 2A. OWASP ZAP DAST
       # -------------------------------------------------------------
       - name: Levantar Notes App efímera para DAST
         run: |
@@ -101,7 +103,7 @@ jobs:
             -e DB_HOST=db ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
           timeout 120 bash -c 'until curl -sf http://localhost:5000/health | grep -q connected; do sleep 3; done'
           curl -s -X POST -H "Content-Type: application/json" \
-            -d '{"title":"TP18","content":"seed para ZAP"}' http://localhost:5000/api/notes
+            -d '{"title":"PIF","content":"seed para ZAP"}' http://localhost:5000/api/notes
 
       - name: Ejecutar OWASP ZAP Baseline (reporte XML)
         run: |
@@ -111,14 +113,14 @@ jobs:
           test -s reports-json/zap-report.xml
 
       # -------------------------------------------------------------
-      # 2B. THREAGILE THREAT MODELING (TP14)
+      # 2B. THREAGILE THREAT MODELING
       # -------------------------------------------------------------
       - name: Ejecutar Threagile Threat Model Analysis
         uses: threagile/run-threagile-action@v1
         continue-on-error: true
         with:
           # v2: la action solo acepta model-file; la salida va a threagile/output/
-          model-file: 'devops-tp12/threagile.yaml'
+          model-file: 'threat-model/threagile.yaml'
 
       - name: Copiar risks.json de Threagile
         run: |
@@ -130,7 +132,7 @@ jobs:
           fi
 
       # -------------------------------------------------------------
-      # 2C. SEMGREP SAST (TP15)
+      # 2C. SEMGREP SAST
       # -------------------------------------------------------------
       - name: Preparar Python
         uses: actions/setup-python@v5
@@ -141,14 +143,14 @@ jobs:
         run: |
           python3 -m pip install semgrep
           mkdir -p .semgrep-tmp
-          helm template tp15 devops-tp12/chart -f devops-tp12/values-local.yaml > .semgrep-tmp/helm-rendered.yaml
+          cp manifests-rendered-prod.yaml .semgrep-tmp/helm-rendered.yaml
           # v2: p/owasp-top-ten (p/owasp-top-10 no existe en el registry de Semgrep)
           semgrep scan --config=p/owasp-top-ten --config=p/python --config=p/dockerfile --config=p/kubernetes \
             --no-git-ignore --json --output=reports-json/semgrep-results.json \
-            devops-tp12/app devops-tp12/monitoring-k8s-manifests.yaml guia-11 .semgrep-tmp || true
+            app .semgrep-tmp || true
 
       # -------------------------------------------------------------
-      # 2D. TRIVY CONTAINER, SCA E IaC (TP16)
+      # 2D. TRIVY CONTAINER, SCA E IaC
       # -------------------------------------------------------------
       - name: Ejecutar Trivy Container Scan
         # v2: versión fijada por SHA (v0.36.0) en lugar de @master
@@ -163,13 +165,13 @@ jobs:
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: 'fs'
-          scan-ref: '${{ env.APP_DIR }}/backend'
+          scan-ref: '${{ env.BACKEND_DIR }}'
           scanners: 'vuln'
           format: 'json'
           output: 'reports-json/trivy-sca-results.json'
           exit-code: '0'
 
-      - name: Ejecutar Trivy IaC sobre YAML Renderizado (TP10B)
+      - name: Ejecutar Trivy IaC sobre YAML Renderizado
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
         with:
           scan-type: 'config'
@@ -179,7 +181,7 @@ jobs:
           exit-code: '0'
 
       # -------------------------------------------------------------
-      # 2E. GITLEAKS SECRET SCANNING (TP17)
+      # 2E. GITLEAKS SECRET SCANNING
       # -------------------------------------------------------------
       - name: Ejecutar Gitleaks CLI
         run: |
@@ -276,5 +278,5 @@ jobs:
       - name: Despliegue con Helm en Kubernetes
         run: |
           echo "Desplegando Helm Chart en Kubernetes..."
-          # helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ./${{ env.APP_DIR }}/devops-portfolio \
+          # helm upgrade --install ${{ env.HELM_RELEASE_NAME }} ./${{ env.CHART_DIR }} \
           #   -n ${{ env.K8S_NAMESPACE }}

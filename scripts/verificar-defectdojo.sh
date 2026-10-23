@@ -2,7 +2,7 @@
 set -uo pipefail
 
 echo "=========================================================="
-echo "  VERIFICACIÓN Y CARGA LOCAL A DEFECTDOJO API v2 (TP18) v2"
+echo "  VERIFICACIÓN Y CARGA LOCAL A DEFECTDOJO API v2"
 echo "=========================================================="
 echo ""
 
@@ -51,13 +51,13 @@ import_scan() {
 }
 
 # v2: scan_type reales del código de DefectDojo 3.4 y un test por cada reporte
-import_scan "ZAP Scan"               "$REPORTS_DIR/zap-report.xml"               "OWASP ZAP DAST (TP13C)"
-import_scan "Threagile risks report" "$REPORTS_DIR/threagile-risks.json"         "Threagile Threat Model (TP14)"
-import_scan "Semgrep JSON Report"    "$REPORTS_DIR/semgrep-results.json"         "Semgrep SAST (TP15)"
-import_scan "Trivy Scan"             "$REPORTS_DIR/trivy-container-results.json" "Trivy Container (TP16)"
-import_scan "Trivy Scan"             "$REPORTS_DIR/trivy-sca-results.json"       "Trivy SCA (TP16)"
-import_scan "Trivy Scan"             "$REPORTS_DIR/trivy-iac-results.json"       "Trivy IaC (TP16)"
-import_scan "Gitleaks Scan"          "$REPORTS_DIR/gitleaks-report.json"         "Gitleaks Secret Scanning (TP17)"
+import_scan "ZAP Scan"               "$REPORTS_DIR/zap-report.xml"               "OWASP ZAP DAST"
+import_scan "Threagile risks report" "$REPORTS_DIR/threagile-risks.json"         "Threagile Threat Model"
+import_scan "Semgrep JSON Report"    "$REPORTS_DIR/semgrep-results.json"         "Semgrep SAST"
+import_scan "Trivy Scan"             "$REPORTS_DIR/trivy-container-results.json" "Trivy Container"
+import_scan "Trivy Scan"             "$REPORTS_DIR/trivy-sca-results.json"       "Trivy SCA"
+import_scan "Trivy Scan"             "$REPORTS_DIR/trivy-iac-results.json"       "Trivy IaC"
+import_scan "Gitleaks Scan"          "$REPORTS_DIR/gitleaks-report.json"         "Gitleaks Secret Scanning"
 
 echo ""
 echo "=== Verificación completada: $OK importaciones OK, $FAIL con error ==="

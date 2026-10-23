@@ -15,7 +15,7 @@ crear() {
 read -r -d '' CUERPO1 <<'EOF' || true
 ### Descripción de la Brecha / Vulnerabilidad Registrada
 
-El Dockerfile heredado del TP18 (`guia-10/backend/Dockerfile`) ejecuta el proceso con un UID implícito asignado por `useradd`, conserva binarios con bits setuid/setgid activos y usa una imagen base sin fijar por digest. Hallazgo H-01 de `docs/ASVS-gap-analysis.md`.
+El Dockerfile heredado del TP18 (`app/backend/Dockerfile`) ejecuta el proceso con un UID implícito asignado por `useradd`, conserva binarios con bits setuid/setgid activos y usa una imagen base sin fijar por digest. Hallazgo H-01 de `docs/ASVS-gap-analysis.md`.
 
 ### Referencia OWASP ASVS v5.0.0
 
@@ -25,7 +25,7 @@ V5.2.1 (guía) → ASVS 5.0.0 V13 Configuration / V15 Secure Coding and Architec
 
 ```gherkin
 Scenario: Imagen rootless sin binarios con privilegios elevados
-  Given el Dockerfile de guia-10/backend con compilación multietapa
+  Given el Dockerfile de app/backend con compilación multietapa
   When se construye la imagen y se ejecuta "id -u" dentro del contenedor
   Then el UID del proceso debe ser 10001
   And "find / -xdev -perm /6000 -type f" no debe devolver ningún archivo
@@ -36,7 +36,7 @@ EOF
 read -r -d '' CUERPO2 <<'EOF' || true
 ### Descripción de la Brecha / Vulnerabilidad Registrada
 
-Los Deployments del chart (`guia-10/devops-portfolio/templates/`) no declaran `securityContext`: permiten la escalada de privilegios y el sistema de archivos raíz es escribible. Hallazgo H-02 de `docs/ASVS-gap-analysis.md`.
+Los Deployments del chart (`helm/notes-app/templates/`) no declaran `securityContext`: permiten la escalada de privilegios y el sistema de archivos raíz es escribible. Hallazgo H-02 de `docs/ASVS-gap-analysis.md`.
 
 ### Referencia OWASP ASVS v5.0.0
 
