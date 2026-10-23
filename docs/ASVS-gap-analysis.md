@@ -33,3 +33,10 @@ Flujo aplicado: Código heredado TP18 → Auditoría vs ASVS v5.0.0 → Matriz d
 - Justificación: la trazabilidad a un estándar requiere que la referencia exista en la versión declarada.
 - Versión 2: mapear cada hallazgo al capítulo vigente de ASVS 5.0.0.
 - Cambio realizado: la matriz conserva el ID de la guía en "Ref. guía" y agrega el capítulo real en "ASVS 5.0.0".
+
+### D2. Quality gate de Checkov por severidad
+
+- Problema: la guía pide abortar el build ante hallazgos de severidad Alta o Crítica, pero Checkov sin una cuenta de Prisma Cloud no informa severidades: el campo `severity` de cada hallazgo queda vacío.
+- Justificación: sin severidades, un umbral del tipo `--hard-fail-on HIGH,CRITICAL` no bloquearía ningún hallazgo y el gate quedaría sin efecto.
+- Versión 2: gate binario: cualquier hallazgo de Checkov o kube-linter detiene el pipeline, salvo los riesgos aceptados y justificados.
+- Cambio realizado: `.checkov.yaml` y `.kube-linter.yaml` con la lista de excepciones, documentadas en `docs/riesgos-aceptados.md`.
