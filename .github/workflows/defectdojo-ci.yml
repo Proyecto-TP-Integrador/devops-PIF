@@ -92,8 +92,22 @@ jobs:
       - name: Renderizar Helm Chart (Render First)
         run: |
           helm template ${{ env.HELM_RELEASE_NAME }} ./${{ env.CHART_DIR }} \
-            -f ${{ env.VALUES_PROD }} > manifests-rendered-prod.yaml
+            -f ${{ env.VALUES_PROD }} \
+            --set backend.image.repository=${{ env.DOCKER_IMAGE }} \
+            --set backend.image.tag=${{ github.sha }} > manifests-rendered-prod.yaml
           test -s manifests-rendered-prod.yaml
+
+      - name: "Andon Cord: Checkov sobre el manifiesto renderizado"
+        run: |
+          pipx run --spec checkov==3.3.30 checkov -f manifests-rendered-prod.yaml \
+            --config-file .checkov.yaml --compact \
+            -o cli -o json --output-file-path console,reports-json/checkov-results.json
+
+      - name: "Andon Cord: kube-linter sobre el manifiesto renderizado"
+        run: |
+          curl -sSfL https://github.com/stackrox/kube-linter/releases/download/v0.8.3/kube-linter-linux.tar.gz \
+            | tar -xz -C /tmp kube-linter
+          /tmp/kube-linter lint manifests-rendered-prod.yaml --config .kube-linter.yaml
 
       # -------------------------------------------------------------
       # 2A. OWASP ZAP DAST
